@@ -1,14 +1,14 @@
 {
-  "name": "tinder-lite-backend",
+  "name": "lets-glance-backend",
   "version": "1.0.0",
   "description": "",
-  "homepage": "https://github.com/DEVASHRAY/tinder-lite-backend#readme",
+  "homepage": "https://github.com/DEVASHRAY/lets-glance-backend#readme",
   "bugs": {
-    "url": "https://github.com/DEVASHRAY/tinder-lite-backend/issues"
+    "url": "https://github.com/DEVASHRAY/lets-glance-backend/issues"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/DEVASHRAY/tinder-lite-backend.git"
+    "url": "git+https://github.com/DEVASHRAY/lets-glance-backend.git"
   },
   "type": "module",
   "engines": {
@@ -24,7 +24,7 @@
     "lint": "eslint .",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "deploy": "npm ci && npm run build && pm2 restart tinder-lite-backend"
+    "deploy": "npm ci && npm run build && pm2 restart lets-glance-backend"
   },
   "dependencies": {
     "@aws-sdk/client-sesv2": "^3.1121.0",

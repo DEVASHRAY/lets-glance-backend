@@ -97,6 +97,7 @@ const installLogCapture = ({ testContext }: InstallLogCaptureInput): CapturedLog
 const createTestApp = (): Application => {
   const app = express();
 
+  app.set('trust proxy', 'loopback');
   app.use(requestContextMiddleware);
   app.use(requestAccessMiddleware);
 
@@ -203,7 +204,10 @@ try {
 
       try {
         const successResponse = await fetch(`${origin}/ok?secret=must-not-appear`, {
-          headers: { 'X-Request-Id': 'client-supplied-id' },
+          headers: {
+            'X-Forwarded-For': '198.51.100.10, 203.0.113.20',
+            'X-Request-Id': 'client-supplied-id',
+          },
         });
         await successResponse.text();
         const clientErrorResponse = await fetch(`${origin}/client-error`);
@@ -244,11 +248,15 @@ try {
         }
         assert.equal(new Set(allLogs.map(({ requestId }) => requestId)).size, 4);
         assert.match(logs.success[0]?.detail ?? '', /method=GET path=\/ok status=204/);
+        assert.match(logs.success[0]?.detail ?? '', /ip=203\.0\.113\.20/);
         assert.match(logs.warn[0]?.detail ?? '', /status=(?:404|422)/);
         assert.match(logs.warn[1]?.detail ?? '', /status=(?:404|422)/);
         assert.match(logs.fail[0]?.detail ?? '', /path=\/server-error status=500/);
         assert.match(allDetails, /durationMs=\d+\.\d{2}/);
-        assert.doesNotMatch(allDetails, /client-supplied-id|secret|must-not-appear|\?/);
+        assert.doesNotMatch(
+          allDetails,
+          /198\.51\.100\.10|client-supplied-id|secret|must-not-appear|\?/,
+        );
         assert.ok(allLogs.every(({ message }) => message === 'HTTP request completed'));
       } finally {
         await closeServer({ server });

@@ -70,8 +70,8 @@ export const attachWebSocketServer = ({ httpServer }: AttachWebSocketServerInput
 
   const allowedWebOrigin = frontendUrl.origin;
 
-  // 2. This middleware runs during the handshake, before Socket.IO emits `connection`.
-  // `next()` accepts it; `next(error)` rejects it and the client receives `connect_error`.
+  // This namespace middleware rechecks Origin and authenticates the cookie before Socket.IO emits
+  // `connection`. `next()` accepts it; `next(error)` rejects it with a safe `connect_error`.
   io.use((socket, next) => {
     // Trust identity only from the browser-sent HttpOnly cookie, never a client payload:
     // `Origin: https://app.example` must match, then `Cookie: <auth-cookie>=<JWT>` is verified.
@@ -140,7 +140,7 @@ export const attachWebSocketServer = ({ httpServer }: AttachWebSocketServerInput
     });
   });
 
-  // 3. `connection` means this socket is already authenticated and connected; this block only
+  // `connection` means this socket is already authenticated and connected; this block only
   // initializes that connected socket's expiry cleanup and personal delivery room.
   io.on('connection', (socket) => {
     const initializeConnectedSocketWithCallback = callbackify(async (): Promise<void> => {
@@ -172,6 +172,11 @@ export const attachWebSocketServer = ({ httpServer }: AttachWebSocketServerInput
     });
   });
 
-  // 4. Attach the shared Socket.IO instance to the same HTTP server used by Express.
-  io.attach(httpServer);
+  // Engine.IO checks this before accepting the HTTP WebSocket upgrade. The namespace middleware
+  // above repeats the comparison so a future transport change cannot bypass the application gate.
+  io.attach(httpServer, {
+    allowRequest: (request, allow) => {
+      allow(null, request.headers.origin === allowedWebOrigin);
+    },
+  });
 };

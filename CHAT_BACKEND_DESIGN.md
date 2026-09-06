@@ -904,7 +904,7 @@ This was deliberately deferred from the first version to keep the protocol small
 The browser connects to a same-origin endpoint:
 
 ```text
-wss://tinder-lite.space/ws
+wss://lets.glance.in/ws
 ```
 
 Because it is same-origin, the browser includes the existing HttpOnly authentication cookie in the upgrade request.
@@ -938,7 +938,7 @@ The backend compares the handshake `Origin` against exactly one configured origi
 
 ```text
 Development: http://localhost:3000
-Production:  https://tinder-lite.space
+Production:  https://letsglance.in
 ```
 
 `ALLOWED_WEB_ORIGIN` is required at startup and normalized once with `URL`. Each handshake Origin
@@ -949,7 +949,7 @@ suffix, regular-expression-domain or reflected-origin checks.
 Backend environment value:
 
 ```text
-ALLOWED_WEB_ORIGIN=https://tinder-lite.space
+ALLOWED_WEB_ORIGIN=https://letsglance.in
 ```
 
 Authentication answers "who is this?" Origin validation answers "which website initiated this browser connection?" Both are required.
@@ -1554,12 +1554,12 @@ is correct in production when Next.js and Express run on the same host. It descr
 It is different from the public browser origin:
 
 ```text
-TINDER_APP_ORIGIN=https://tinder-lite.space
+TINDER_APP_ORIGIN=https://letsglance.in
 ```
 
 ### Proposed mutation protection
 
-At `tinder-lite-frontend/src/app/api/[...path]/route.ts`, before forwarding `POST`, `PUT`, `PATCH` or `DELETE`:
+At `lets-glance-frontend/src/app/api/[...path]/route.ts`, before forwarding `POST`, `PUT`, `PATCH` or `DELETE`:
 
 - read the incoming browser `Origin`
 - compare it exactly with `TINDER_APP_ORIGIN`

@@ -5,6 +5,7 @@ import { bindRequestContext } from '../lib/request-context.ts';
 
 interface WriteAccessLogInput {
   aborted: boolean;
+  clientIp: string;
   durationMs: string;
   method: string;
   pathname: string;
@@ -15,8 +16,8 @@ interface CompleteRequestInput {
   aborted: boolean;
 }
 
-interface SanitizePathnameInput {
-  pathname: string;
+interface SanitizeLogValueInput {
+  value: string;
 }
 
 interface ResponseEventHandlers {
@@ -24,12 +25,13 @@ interface ResponseEventHandlers {
   finish?: () => void;
 }
 
-const sanitizePathname = ({ pathname }: SanitizePathnameInput): string => {
-  return pathname.replaceAll('\r', '%0D').replaceAll('\n', '%0A').replaceAll('\t', '%09');
+const sanitizeLogValue = ({ value }: SanitizeLogValueInput): string => {
+  return value.replaceAll('\r', '%0D').replaceAll('\n', '%0A').replaceAll('\t', '%09');
 };
 
 const writeAccessLog = ({
   aborted,
+  clientIp,
   durationMs,
   method,
   pathname,
@@ -37,7 +39,7 @@ const writeAccessLog = ({
 }: WriteAccessLogInput): void => {
   const outcome = aborted ? 'aborted' : 'completed';
   const message = aborted ? 'HTTP request aborted' : 'HTTP request completed';
-  const detail = `method=${method} path=${pathname} status=${String(statusCode)} durationMs=${durationMs} outcome=${outcome}`;
+  const detail = `method=${method} path=${pathname} status=${String(statusCode)} durationMs=${durationMs} outcome=${outcome} ip=${clientIp}`;
 
   if (aborted) {
     logger.warn({ message, detail });
@@ -59,7 +61,16 @@ const writeAccessLog = ({
 
 export const requestAccessMiddleware: RequestHandler = (request, response, next): void => {
   const method = request.method;
-  const pathname = sanitizePathname({ pathname: request.path });
+  const pathname = sanitizeLogValue({ value: request.path });
+  let resolvedClientIp = 'unavailable';
+
+  if (request.ip) {
+    resolvedClientIp = request.ip;
+  } else if (request.socket.remoteAddress) {
+    resolvedClientIp = request.socket.remoteAddress;
+  }
+
+  const clientIp = sanitizeLogValue({ value: resolvedClientIp });
   // `performance.now()` is Node's monotonic timer, so wall-clock changes cannot skew durations.
   const startedAt = performance.now();
   let wasLogged = false;
@@ -85,6 +96,7 @@ export const requestAccessMiddleware: RequestHandler = (request, response, next)
 
     writeAccessLog({
       aborted,
+      clientIp,
       durationMs: Math.max(0, performance.now() - startedAt).toFixed(2),
       method,
       pathname,

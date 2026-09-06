@@ -11,10 +11,21 @@ import { requestContextMiddleware } from './middlewares/request-context-middlewa
 // Importing the app only constructs HTTP handling; server.ts owns database and network startup.
 export const app = express();
 
+// Nginx and the Next.js BFF connect over loopback on the same EC2 host. Trusting only loopback
+// lets Express interpret their forwarded protocol/IP headers without trusting arbitrary peers.
+app.set('trust proxy', 'loopback');
+
 // Start request-local state before parsers and routes so their failures keep the same response ID.
 app.use(requestContextMiddleware);
 // Observe completion before parsers and routes so successes, errors, aborts, and 404s are all covered.
 app.use(requestAccessMiddleware);
+
+// This lightweight liveness check proves that the local Express listener can answer requests.
+// Startup does not open the listener until MongoDB has connected.
+app.get('/health', (_request, response) => {
+  response.status(200).json({ status: 'ok' });
+});
+
 // `express.json()` reads the HTTP request body as text and turns JSON into `req.body`.
 // Default limit is 100kb; bulk signup seed (~200kb for 100 users) needs more.
 app.use(express.json({ limit: HttpConstantsCollection.jsonBodyLimit }));
