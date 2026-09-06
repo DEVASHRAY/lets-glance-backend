@@ -3,18 +3,42 @@ import { ApplicationError } from '../../lib/application-error.ts';
 import { AuthCookieConstantsCollection } from '../../lib/auth-cookie.constants.ts';
 import { AuthCookieOptionsCollection } from '../../lib/auth-cookie-options.ts';
 import { authOtpService } from './auth-otp.service.ts';
+import { AuthConstantsCollection } from './auth.constants.ts';
 import { authService } from './auth.service.ts';
 import type { UserFields } from '../user/user.model.ts';
 import type { AuthTypeCollection } from './auth.types.ts';
 import type { NextFunction, Request, Response } from 'express';
 
+interface ReadOtpPurposeInput {
+  purpose: string | undefined;
+}
+
+const readOtpPurpose = ({ purpose }: ReadOtpPurposeInput): AuthTypeCollection['OtpPurpose'] => {
+  if (purpose === AuthConstantsCollection.OtpPurpose.Login) {
+    return AuthConstantsCollection.OtpPurpose.Login;
+  }
+
+  if (purpose === AuthConstantsCollection.OtpPurpose.Signup) {
+    return AuthConstantsCollection.OtpPurpose.Signup;
+  }
+
+  throw new ApplicationError({
+    message: 'OTP purpose must be login or signup',
+    statusCode: ApplicationErrorConstantsCollection.HttpStatusCode.UNPROCESSABLE_ENTITY,
+  });
+};
+
 const sendOtp = async (
-  req: Request<object, object, Pick<UserFields, 'email'>>,
+  req: Request<object, object, Pick<UserFields, 'email'> & ReadOtpPurposeInput>,
   res: Response,
   next: NextFunction,
 ) => {
   try {
-    const { wasAlreadySent } = await authOtpService.sendOtp({ email: req.body.email });
+    const purpose = readOtpPurpose({ purpose: req.body.purpose });
+    const { wasAlreadySent } = await authOtpService.sendOtp({
+      email: req.body.email,
+      purpose,
+    });
 
     if (wasAlreadySent) {
       res.status(200).json({

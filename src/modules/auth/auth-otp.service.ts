@@ -31,7 +31,7 @@ const createExpiredOtpError = () => {
   });
 };
 
-const sendOtp = async ({ email }: Pick<UserFields, 'email'>) => {
+const sendOtp = async ({ email, purpose }: AuthTypeCollection['SendOtpInput']) => {
   try {
     if (!email || !validator.isEmail(email)) {
       throw new ApplicationError({
@@ -41,6 +41,22 @@ const sendOtp = async ({ email }: Pick<UserFields, 'email'>) => {
     }
 
     email = normalizeEmail({ email });
+    const existingUser = await User.exists({ email });
+
+    if (purpose === AuthConstantsCollection.OtpPurpose.Login && !existingUser) {
+      throw new ApplicationError({
+        message: 'No account for this email',
+        statusCode: ApplicationErrorConstantsCollection.HttpStatusCode.NOT_FOUND,
+      });
+    }
+
+    if (purpose === AuthConstantsCollection.OtpPurpose.Signup && existingUser) {
+      throw new ApplicationError({
+        message: 'Email already exists',
+        statusCode: ApplicationErrorConstantsCollection.HttpStatusCode.CONFLICT,
+      });
+    }
+
     const existingOtp = await otpService.findOtpByEmail({ email });
 
     if (existingOtp && existingOtp.expiresAt.getTime() > Date.now()) {
