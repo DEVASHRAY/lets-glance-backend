@@ -120,7 +120,7 @@ const sendEmail = async ({
   });
 
   const command = new SendEmailCommand({
-    FromEmailAddress: fromEmailAddress,
+    FromEmailAddress: `Let's Glance <${fromEmailAddress}>`,
     Destination: {
       ToAddresses: [to],
     },
