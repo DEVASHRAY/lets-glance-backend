@@ -98,7 +98,7 @@ export type ConversationFieldsType = InferSchemaType<typeof conversationSchema> 
   id: string;
 };
 
-conversationSchema.index({ connectionId: 1 }, { unique: true });
+conversationSchema.index({ connectionId: 1 });
 
 conversationSchema.index({
   'participants.userId': 1,
